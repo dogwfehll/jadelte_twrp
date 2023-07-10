@@ -20,7 +20,8 @@ jobs:
            wget -q ${TWRP_SOURCE_AA} -O $HOME/twrp.tar.xz.aa
            wget -q ${TWRP_SOURCE_AB} -O $HOME/twrp.tar.xz.ab
            wget -q ${TWRP_SOURCE_AC} -O $HOME/twrp.tar.xz.ac
-           cat twrp.tar.xz.* | tar -xJf --directory $HOME/twrp/ && rm twrp.tar.xz.*
+           cat twrp.tar.xz.* > twrp.tar.xz
+           tar -xJf twrp.tar.xz --directory $HOME/twrp/ && rm twrp.tar.xz
        - name: building
          run: |
            cd $HOME/twrp/ && git clone https://github.com/dogwfehll/jadelte_twrp.git device/samsung/jadlte
