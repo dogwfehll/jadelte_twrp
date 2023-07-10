@@ -39,6 +39,6 @@ jobs:
            cd $HOME/twrp/
        - name: publish
          env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.TOKEN }}
          run: gh release create '$HOME/twrp/TWRP-$version-jadelte-$(date +"%Y%m%d")-Unofficial.img#SM-C710F'
       
