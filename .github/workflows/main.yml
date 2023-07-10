@@ -1,0 +1,43 @@
+on:
+  workflow_dispatch:
+
+jobs:
+    build:
+      name: Config docker
+      runs-on: ubuntu-latest
+      steps:
+       - name: update apt
+         run: sudo apt update
+       - name: pull docker image
+         run: docker pull fr3akyphantom/droid-builder:latest
+       - name: download twrp source
+         run: |
+           cd $HOME && mkdir twrp
+           TWRP_SOURCE_AA="https://github.com/PhantomZone54/twrp_sources_norepo/releases/download/v3.3.1-20200222/MinimalOmniRecovery-twrp-8.1-norepo-20200222.tar.xz.aa"
+           TWRP_SOURCE_AB="https://github.com/PhantomZone54/twrp_sources_norepo/releases/download/v3.3.1-20200222/MinimalOmniRecovery-twrp-8.1-norepo-20200222.tar.xz.ab"
+           TWRP_SOURCE_AC="https://github.com/PhantomZone54/twrp_sources_norepo/releases/download/v3.3.1-20200222/MinimalOmniRecovery-twrp-8.1-norepo-20200222.tar.xz.ac"
+           wget -q ${TWRP_SOURCE_AA} -O $HOME/twrp.tar.xz.aa
+           wget -q ${TWRP_SOURCE_AB} -O $HOME/twrp.tar.xz.ab
+           wget -q ${TWRP_SOURCE_AC} -O $HOME/twrp.tar.xz.ac
+           cat twrp.tar.xz.* | tar -xJf --directory $HOME/twrp/ && rm twrp.tar.xz.*
+       - name: building
+         run: |
+           cd $HOME/twrp/ && git clone https://github.com/dogwfehll/jadelte_twrp.git device/samsung/jadlte
+           rm -rf bootable/recovery && git clone https://github.com/omnirom/android_bootable_recovery -b android-8.1 --depth 1 bootable/recovery
+           docker run --rm -i -e USER_ID=$(id -u) -e GROUP_ID=$(id -g) -v "$(pwd):/home/builder/twrp/:rw,z" -v "${HOME}/.ccache:/srv/ccache:rw,z" fr3akyphantom/droid-builder bash << EOF
+           cd /home/builder/twrp/
+           source build/envsetup.sh
+           BUILD_FLAVOR="eng"
+           lunch omni_jadelte-${BUILD_FLAVOR}
+           make -j$(nproc --all) recoveryimage
+           exit
+       - name: after building
+         run: | 
+           export version=$(cat bootable/recovery/variables.h | grep "define TW_MAIN_VERSION_STR" | cut -d '"' -f2)
+           cp $HOME/twrp/out/target/product/jadelte/recovery.img $HOME/twrp/TWRP-$version-jadelte-$(date +"%Y%m%d")-Unofficial.img
+           cd $HOME/twrp/
+       - name: publish
+         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          run: gh release create '$HOME/twrp/TWRP-$version-jadelte-$(date +"%Y%m%d")-Unofficial.img#SM-C710F'
+      
